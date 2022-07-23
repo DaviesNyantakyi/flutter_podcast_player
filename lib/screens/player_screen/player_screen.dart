@@ -34,12 +34,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> initAudio() async {
     final audioProvider = Provider.of<AudioProvider>(context, listen: false);
 
-    if (widget.episode.audio != null) {
-      await audioProvider.initPlayer(url: widget.episode.audio!);
-    }
+    await audioProvider.initPlayer(episode: widget.episode);
   }
 
-  Future<void> showDescription({required EpisodeModel episode}) async {
+  Future<void> showDescription() async {
     final audioProvider = Provider.of<AudioProvider>(context, listen: false);
 
     showCustomBottomSheet(
@@ -243,7 +241,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           PodcastImage(
             height: 350,
             width: 300,
-            imageURL: widget.episode.image ?? '',
+            imageURL: widget.episode.image.toString(),
           ),
           const SizedBox(height: kContentSpacing24),
           Column(
@@ -260,7 +258,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
         ],
       ),
-      onTap: () => showDescription(episode: widget.episode),
+      onTap: () => showDescription(),
     );
   }
 

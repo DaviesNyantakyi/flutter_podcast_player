@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final getTrending = ListenNotesAPI().fetchTrending();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,8 +45,96 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      // bottomNavigationBar: _buildMiniPlayer(),
     );
   }
+
+  // Widget _buildMiniPlayer() {
+  //   return Consumer<AudioProvider>(
+  //     builder: (context, audioProvider, _) {
+  //       return GestureDetector(
+  //         // onTap: () => showPlayer(context: context),
+  //         child: Container(
+  //           height: 64,
+  //           decoration: const BoxDecoration(
+  //             borderRadius: BorderRadius.only(
+  //               topLeft: Radius.circular(kRadius),
+  //               topRight: Radius.circular(kRadius),
+  //             ),
+  //           ),
+  //           child: Padding(
+  //             padding: const EdgeInsets.all(kContentSpacing8),
+  //             child: Row(
+  //               children: [
+  //                 Expanded(
+  //                   flex: 4,
+  //                   child: Row(
+  //                     children: [
+  //                       const PodcastImage(
+  //                         width: 50,
+  //                         height: 70,
+  //                         imageURL: '',
+  //                       ),
+  //                       const SizedBox(width: kContentSpacing8),
+  //                       Expanded(
+  //                         flex: 2,
+  //                         child: _buildTitle(),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 Expanded(
+  //                   child: IconButton(
+  //                     tooltip: 'Play & Pause',
+  //                     iconSize: 32,
+  //                     onPressed: () async {
+  //                       if (audioProvider.playerState?.playing == true) {
+  //                         await audioProvider.pause();
+  //                       } else {
+  //                         await audioProvider.play();
+  //                       }
+  //                     },
+  //                     //
+  //                     icon: Icon(
+  //                       audioProvider.playerState?.playing == false ||
+  //                               audioProvider.playerState?.processingState ==
+  //                                   ProcessingState.completed
+  //                           ? BootstrapIcons.play_circle_fill
+  //                           : BootstrapIcons.pause_circle_fill,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
+  // Widget _buildTitle() {
+  //   return Consumer<AudioProvider>(
+  //     builder: (context, audioProvider, _) {
+  //       String text = 'test';
+
+  //       switch (audioProvider.playerState?.processingState) {
+  //         case ProcessingState.loading:
+  //           text = 'Loading...';
+  //           break;
+  //         case ProcessingState.buffering:
+  //           text = 'Buffering...';
+  //           break;
+  //         default:
+  //       }
+  //       return Text(
+  //         text,
+  //         style: Theme.of(context).textTheme.bodyText1,
+  //         overflow: TextOverflow.ellipsis,
+  //       );
+  //     },
+  //   );
+  // }
 
   // ignore: unused_element
   Widget _buildRecentlyPlayed(BuildContext context) {

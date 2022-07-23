@@ -1,6 +1,14 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_podcast_player/models/episode_model.dart';
+import 'package:flutter_podcast_player/widgets/bottomsheet.dart';
+import 'package:flutter_podcast_player/widgets/episode_tile.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
+
+import '../screens/player_screen/player_screen.dart';
+import '../utilities/constant.dart';
 
 Future<AudioProvider> initAudioSerivce() async {
   return await AudioService.init(
@@ -41,38 +49,25 @@ class AudioProvider extends BaseAudioHandler with ChangeNotifier {
     _playListChangeStream();
     _postionStream();
     _totalDurationStream();
-
+    // _currentIndexStream();
     playingStateStream();
   }
 
-  Future<void> initPlayer({required String url}) async {
-    playbackState.add(PlaybackState(
-      processingState: AudioProcessingState.loading,
-      systemActions: {
-        MediaAction.seek,
-      },
-    ));
-    await _justAudio.setUrl(url);
-    playbackState.add(PlaybackState(
-      playing: false,
-      controls: [
-        MediaControl.rewind,
-        MediaControl.play,
-        MediaControl.fastForward
-      ],
-      processingState: AudioProcessingState.ready,
-      systemActions: {
-        MediaAction.seek,
-      },
-    ));
-    await play();
+  Future<void> initPlayer({required EpisodeModel episode}) async {
+    if (episode.audio != null) {
+      await _justAudio.setUrl(episode.audio!);
+
+      await play();
+    }
+
+    notifyListeners();
   }
 
   @override
   Future<void> play() async {
-    if (_justAudio.processingState == ProcessingState.completed) {
-      await seek(Duration.zero);
-    }
+    // if (_justAudio.processingState == ProcessingState.completed) {
+    //   await seek(Duration.zero);
+    // }
     await _justAudio.play();
     await super.play();
   }
@@ -140,6 +135,7 @@ class AudioProvider extends BaseAudioHandler with ChangeNotifier {
 
     // Notify System
     queue.value.addAll(mediaItems);
+
     notifyListeners();
     return super.addQueueItems(mediaItems);
   }
@@ -170,6 +166,18 @@ class AudioProvider extends BaseAudioHandler with ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // void _currentIndexStream() {
+  //   // Listen for the current media item
+  //   _justAudio.currentIndexStream.listen((index) {
+  //     final currentPlayList = queue.value;
+
+  //     if (index == null || currentPlayList.isEmpty) {
+  //       return;
+  //     }
+  //     mediaItem.add(currentPlayList[index]);
+  //   });
+  // }
 
   void _playListChangeStream() {
     // Listen to playlist changes
@@ -206,4 +214,131 @@ class AudioProvider extends BaseAudioHandler with ChangeNotifier {
       notifyListeners();
     });
   }
+}
+
+Future<void> addToQueue({
+  required BuildContext context,
+  required EpisodeModel episode,
+}) async {
+  try {
+    final audioProvider = Provider.of<AudioProvider>(context, listen: false);
+
+    final mediaItem = MediaItem(
+      id: episode.id,
+      title: episode.title ?? '',
+      artist: episode.author,
+      duration: episode.duration,
+      displayDescription: episode.description,
+      artUri: episode.image != null ? Uri.parse(episode.image!) : null,
+      extras: {
+        'audio': episode.audio,
+        'pubDate': episode.pubDate,
+        'pageLink': episode.pageLink,
+      },
+    );
+
+    await audioProvider.addQueueItem(mediaItem);
+  } catch (e) {
+    debugPrint(e.toString());
+  }
+}
+
+Future<void> showQueue({required BuildContext context}) async {
+  final audioProvider = Provider.of<AudioProvider>(context, listen: false);
+
+  showCustomBottomSheet(
+    context: context,
+    height: MediaQuery.of(context).size.height * 0.90,
+    header: AppBar(
+      automaticallyImplyLeading: false,
+      title: Text(
+        'Queue',
+        style: Theme.of(context).textTheme.bodyText2,
+      ),
+      centerTitle: true,
+      leading: IconButton(
+        tooltip: 'Close',
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        icon: const Icon(BootstrapIcons.chevron_down),
+      ),
+    ),
+    child: ChangeNotifierProvider<AudioProvider>.value(
+      value: audioProvider,
+      child: Consumer<AudioProvider>(
+        builder: (context, audioProvider, _) {
+          return ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: audioProvider.playListNotifier.length,
+            separatorBuilder: (context, index) => const SizedBox(
+              height: kContentSpacing8,
+            ),
+            itemBuilder: (context, index) {
+              final episode = EpisodeModel(
+                id: audioProvider.playListNotifier[index].id,
+                image: audioProvider.playListNotifier[index].artUri.toString(),
+                title: audioProvider.playListNotifier[index].title,
+                author: audioProvider.playListNotifier[index].artist,
+                description:
+                    audioProvider.playListNotifier[index].displayDescription,
+                pageLink:
+                    audioProvider.playListNotifier[index].extras?['pageLink'],
+                duration: audioProvider.playListNotifier[index].duration,
+                audio: audioProvider.playListNotifier[index].extras?['audio'],
+              );
+              return EpisodeTile(
+                key: ObjectKey(episode),
+                episode: episode,
+                addQueueOnPressed: () =>
+                    addToQueue(episode: episode, context: context),
+                downloadOnPressed: () {},
+                onPressed: () {},
+              );
+            },
+          );
+        },
+      ),
+    ),
+  );
+}
+
+Future<void> showPlayer({
+  required BuildContext context,
+  required EpisodeModel episode,
+}) async {
+  final audioProvider = Provider.of<AudioProvider>(context, listen: false);
+  showCustomBottomSheet(
+    context: context,
+    height: MediaQuery.of(context).size.height * 0.90,
+    header: AppBar(
+      automaticallyImplyLeading: false,
+      title: Text(
+        'Now Playing',
+        style: Theme.of(context).textTheme.bodyText2,
+      ),
+      centerTitle: true,
+      leading: IconButton(
+        tooltip: 'Close',
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        icon: const Icon(BootstrapIcons.chevron_down),
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Queue',
+          onPressed: () => showQueue(context: context),
+          icon: const Icon(BootstrapIcons.music_note_list),
+        ),
+      ],
+    ),
+    child: ChangeNotifierProvider<AudioProvider>.value(
+      value: audioProvider,
+      child: PlayerScreen(
+        episode: episode,
+      ),
+    ),
+  );
 }
