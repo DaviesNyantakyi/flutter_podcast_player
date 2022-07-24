@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_podcast_player/models/podcast_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/screens/podcast_detail_screen/podcast_detail_screen.dart';
-import 'package:flutter_podcast_player/services/listen_notes_api.dart';
+import 'package:flutter_podcast_player/services/podcast_service.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 import 'package:flutter_podcast_player/widgets/podcast_card.dart';
 import 'package:flutter_podcast_player/widgets/text_form_field.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+
+import '../../utilities/custom_scroll_behavior.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -20,8 +23,7 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController searchCntlr = TextEditingController();
 
-  ListenNotesAPI listenNotes = ListenNotesAPI();
-  late final getTrending = ListenNotesAPI().fetchTrending();
+  PodcastService listenNotes = PodcastService();
 
   List<PodcastModel> podcasts = [];
 
@@ -54,10 +56,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
       appBar: _buildAppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(kContentSpacing16),
           child: Column(
             children: [
               _buildSearch(),
+              const SizedBox(height: kContentSpacing24),
+              _buildPodcasts(context),
               const SizedBox(height: kContentSpacing24),
               _buildResults()
             ],
@@ -80,26 +83,81 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildSearch() {
-    return Column(
-      children: [
-        CustomTextFormField(
-          controller: searchCntlr,
-          hintText: 'Podcast',
-          textInputAction: TextInputAction.search,
-          suffix: IconButton(
-            tooltip: 'Search',
-            constraints:
-                const BoxConstraints(), // Removes padding around button.
-            padding: EdgeInsets.zero,
-            icon: const Icon(
-              BootstrapIcons.search,
-              color: kBlack,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: kContentSpacing16),
+      child: Column(
+        children: [
+          CustomTextFormField(
+            controller: searchCntlr,
+            hintText: 'Podcast',
+            textInputAction: TextInputAction.search,
+            suffix: IconButton(
+              tooltip: 'Search',
+              constraints:
+                  const BoxConstraints(), // Removes padding around button.
+              padding: EdgeInsets.zero,
+              icon: const Icon(
+                BootstrapIcons.search,
+                color: kBlack,
+              ),
+              onPressed: search,
             ),
-            onPressed: search,
+            onFieldSubmitted: (value) => search(),
           ),
-          onFieldSubmitted: (value) => search(),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPodcasts(BuildContext context) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width,
+      height: 170,
+      child: ValueListenableBuilder<Box<PodcastModel>?>(
+        valueListenable: Hive.box<PodcastModel>('podcasts').listenable(),
+        builder: (context, podcastBox, _) {
+          final podcasts = podcastBox?.values.toList() ?? [];
+
+          if (podcasts.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return ScrollConfiguration(
+            behavior: CustomScrollBehavior(),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kContentSpacing16,
+              ),
+              shrinkWrap: true,
+              scrollDirection: Axis.horizontal,
+              itemCount: podcasts.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: kContentSpacing8),
+                  child: PodcastCard(
+                    width: 100,
+                    height: 100,
+                    podcast: podcasts[index],
+                    onTap: () {
+                      final audioProvider =
+                          Provider.of<AudioProvider>(context, listen: false);
+                      Navigator.push(context, CupertinoPageRoute(
+                        builder: (context) {
+                          return ChangeNotifierProvider.value(
+                            value: audioProvider,
+                            child: PodcastDetailScreen(
+                              podcast: podcasts[index],
+                            ),
+                          );
+                        },
+                      ));
+                    },
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -108,6 +166,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       return const CircularProgressIndicator();
     }
     return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: kContentSpacing16),
       shrinkWrap: true,
       itemCount: podcasts.length,
       physics: const NeverScrollableScrollPhysics(),

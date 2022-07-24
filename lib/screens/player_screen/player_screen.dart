@@ -3,28 +3,25 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_podcast_player/models/episode_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 import 'package:flutter_podcast_player/utilities/formal_dates.dart';
-import 'package:flutter_podcast_player/widgets/bottomsheet.dart';
+import 'package:flutter_podcast_player/widgets/episode_tile.dart';
 import 'package:flutter_podcast_player/widgets/podcast_image.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/episode_model.dart';
+
 class PlayerScreen extends StatefulWidget {
-  final EpisodeModel episode;
-  const PlayerScreen({Key? key, required this.episode}) : super(key: key);
+  final MediaItem mediaItem;
+  const PlayerScreen({Key? key, required this.mediaItem}) : super(key: key);
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  bool isPlaying = false;
-
-  double sliderValue = 0.0;
-
   @override
   void initState() {
     initAudio();
@@ -34,55 +31,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> initAudio() async {
     final audioProvider = Provider.of<AudioProvider>(context, listen: false);
 
-    await audioProvider.initPlayer(episode: widget.episode);
-  }
+    if (audioProvider.currentMediaItem?.id == widget.mediaItem.id) {
+      return;
+    }
 
-  Future<void> showDescription() async {
-    final audioProvider = Provider.of<AudioProvider>(context, listen: false);
-
-    showCustomBottomSheet(
-      context: context,
-      height: MediaQuery.of(context).size.height * 0.90,
-      header: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Description',
-          style: Theme.of(context).textTheme.bodyText2,
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          tooltip: 'Close',
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(BootstrapIcons.chevron_down),
-        ),
-      ),
-      child: ChangeNotifierProvider.value(
-        value: audioProvider,
-        child: GestureDetector(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.episode.title ?? '',
-                style: Theme.of(context).textTheme.bodyText1,
-              ),
-              Text(
-                'by ${widget.episode.author ?? ''}',
-                style: Theme.of(context).textTheme.bodyText2,
-              ),
-              const SizedBox(height: kContentSpacing8),
-              Text(
-                widget.episode.description ?? '',
-                style: Theme.of(context).textTheme.bodyText1,
-              ),
-            ],
-          ),
-          onTap: () {},
-        ),
-      ),
-    );
+    await audioProvider.initPlayer(mediaItem: widget.mediaItem);
   }
 
   @override
@@ -151,9 +104,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: SizedBox(
                 height: 70,
                 child: IconButton(
-                  tooltip: 'Shuffle',
-                  iconSize: 20,
-                  icon: const Icon(BootstrapIcons.shuffle),
+                  tooltip: 'Download',
+                  icon: const Icon(
+                    BootstrapIcons.arrow_down_circle,
+                    color: Colors.white,
+                  ),
                   onPressed: () {},
                 ),
               ),
@@ -166,10 +121,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      tooltip: 'Skip Previous',
+                      tooltip: 'Fast rewind',
                       iconSize: 32,
-                      onPressed: audioProvider.skipToPrevious,
-                      icon: const Icon(BootstrapIcons.skip_start),
+                      onPressed: () => audioProvider.rewind(),
+                      icon: const Icon(Icons.replay_30_outlined),
                     ),
                     IconButton(
                       tooltip: 'Play & Pause',
@@ -191,10 +146,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Skip Next',
+                      tooltip: 'Fast foward',
                       iconSize: 32,
-                      onPressed: audioProvider.skipToNext,
-                      icon: const Icon(BootstrapIcons.skip_end),
+                      onPressed: () => audioProvider.fastForward(),
+                      icon: const Icon(
+                        Icons.forward_30_outlined,
+                      ),
                     ),
                   ],
                 ),
@@ -234,38 +191,35 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _buildImageTitle() {
-    return GestureDetector(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          PodcastImage(
-            height: 350,
-            width: 300,
-            imageURL: widget.episode.image.toString(),
-          ),
-          const SizedBox(height: kContentSpacing24),
-          Column(
-            children: [
-              Text(
-                widget.episode.title ?? '',
-                style: Theme.of(context).textTheme.headline6,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-              _buildAuthor(),
-            ],
-          ),
-        ],
-      ),
-      onTap: () => showDescription(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PodcastImage(
+          height: 350,
+          width: 300,
+          imageURL: widget.mediaItem.artUri.toString(),
+        ),
+        const SizedBox(height: kContentSpacing24),
+        Column(
+          children: [
+            Text(
+              widget.mediaItem.title,
+              style: Theme.of(context).textTheme.headline6,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+            _buildAuthor(),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildAuthor() {
     return Consumer<AudioProvider>(
       builder: (context, audioProvider, _) {
-        String text = widget.episode.author ?? '';
+        String text = widget.mediaItem.artist ?? '';
 
         switch (audioProvider.playerState?.processingState) {
           case ProcessingState.loading:

@@ -1,12 +1,16 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_podcast_player/models/podcast_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 import 'package:flutter_podcast_player/utilities/custom_scroll_behavior.dart';
+import 'package:flutter_podcast_player/utilities/hive_boxes.dart';
+import 'package:flutter_podcast_player/utilities/url_launcher.dart';
 import 'package:flutter_podcast_player/widgets/elevated_button.dart';
 import 'package:flutter_podcast_player/widgets/episode_tile.dart';
 import 'package:flutter_podcast_player/widgets/podcast_image.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class PodcastDetailScreen extends StatefulWidget {
   final PodcastModel podcast;
@@ -34,7 +38,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: kContentSpacing24),
-                _buildPlayShuffleButton(),
+                _buildPlayButton(),
                 const SizedBox(height: kContentSpacing24),
                 _buildEpisodes()
               ],
@@ -61,11 +65,25 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
           episode: widget.podcast.episodes![index],
           onPressed: () => showPlayer(
             context: conext,
-            episode: widget.podcast.episodes![index],
+            mediaItem: MediaItem(
+              id: widget.podcast.episodes![index].id,
+              title: widget.podcast.episodes![index].title ?? '',
+              artist: widget.podcast.episodes![index].author,
+              duration: Duration(
+                seconds: widget.podcast.episodes![index].duration ?? 0,
+              ),
+              displayDescription: widget.podcast.episodes![index].description,
+              artUri: widget.podcast.episodes![index].image != null
+                  ? Uri.parse(widget.podcast.episodes![index].image!)
+                  : null,
+              extras: {
+                'audio': widget.podcast.episodes![index].audio,
+                'downloadPath': widget.podcast.episodes![index].downloadPath,
+                'pubDate': widget.podcast.episodes![index].pubDate,
+                'pageLink': widget.podcast.episodes![index].pageLink
+              },
+            ),
           ),
-          addQueueOnPressed: () => addToQueue(
-              episode: widget.podcast.episodes![index], context: conext),
-          downloadOnPressed: () {},
         );
       },
     );
@@ -83,11 +101,11 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
       ),
       actions: [
         IconButton(
-          tooltip: 'Search',
+          tooltip: 'RSS Feed',
           icon: const Icon(
-            BootstrapIcons.search,
+            BootstrapIcons.rss,
           ),
-          onPressed: () {},
+          onPressed: () => launchLink(url: widget.podcast.rss ?? ''),
         ),
       ],
     );
@@ -126,7 +144,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                 style: Theme.of(context).textTheme.caption,
               ),
               const SizedBox(height: kContentSpacing16),
-              _buildCollectionDownloadButton(),
+              _buildIcons(),
             ],
           ),
         )
@@ -134,67 +152,95 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
     );
   }
 
-  Row _buildCollectionDownloadButton() {
-    return Row(
-      children: [
-        IconButton(
-          tooltip: 'Add to collection',
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(BootstrapIcons.folder_plus),
-          onPressed: () {},
-        ),
-        const SizedBox(width: kContentSpacing16),
-        IconButton(
-          tooltip: 'Download',
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: const Icon(
-            BootstrapIcons.arrow_down_circle,
-          ),
-          onPressed: () {},
-        ),
-      ],
-    );
+  Widget _buildIcons() {
+    return ValueListenableBuilder<Box<PodcastModel>>(
+        valueListenable: Hive.box<PodcastModel>('subscriptions').listenable(),
+        builder: (context, subBox, _) {
+          bool subScribed = false;
+
+          final x = subBox.values.cast<PodcastModel>();
+          for (var podcast in x) {
+            if (podcast.id == widget.podcast.id) {
+              subScribed = true;
+            }
+          }
+
+          return Row(
+            children: [
+              IconButton(
+                tooltip: subScribed ? 'Subscribed' : 'Subscribe',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  subScribed
+                      ? BootstrapIcons.check_circle_fill
+                      : BootstrapIcons.folder_plus,
+                ),
+                onPressed: () async {
+                  final subBox = HiveBoxes().getSubScriptions();
+                  if (subScribed) {
+                    subBox.delete(widget.podcast.id);
+                  } else {
+                    // If you
+                    PodcastModel podModel = PodcastModel(
+                      id: widget.podcast.id,
+                      image: widget.podcast.image,
+                      title: widget.podcast.title,
+                      description: widget.podcast.description,
+                      author: widget.podcast.author,
+                      pageLink: widget.podcast.pageLink,
+                      rss: widget.podcast.rss,
+                      episodes: widget.podcast.episodes,
+                    );
+
+                    await subBox.put(widget.podcast.id, podModel);
+                  }
+                },
+              ),
+              const SizedBox(width: kContentSpacing16),
+              IconButton(
+                tooltip: 'Link',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  BootstrapIcons.globe,
+                ),
+                onPressed: () async {
+                  await launchLink(url: widget.podcast.pageLink ?? '');
+                },
+              ),
+            ],
+          );
+        });
   }
 
-  Widget _buildPlayShuffleButton() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Expanded(
-          child: _buildPlayButton(
-            icon: BootstrapIcons.play,
-            label: 'Play',
-            onPressed: () async {
-              if (widget.podcast.episodes != null) {
-                await showPlayer(
-                  context: context,
-                  episode: widget.podcast.episodes!.first,
-                );
-              }
-            },
-          ),
-        ),
-        const SizedBox(width: kContentSpacing16),
-        Expanded(
-          child: _buildPlayButton(
-            icon: BootstrapIcons.shuffle,
-            label: 'Shuffel',
-            onPressed: () {},
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlayButton({
-    required IconData icon,
-    required String label,
-    VoidCallback? onPressed,
-  }) {
+  Widget _buildPlayButton() {
     return CustomElevatedButton(
-      onPressed: onPressed,
+      onPressed: () async {
+        if (widget.podcast.episodes != null) {
+          await showPlayer(
+            context: context,
+            mediaItem: MediaItem(
+              id: widget.podcast.episodes?.first.id ?? '',
+              title: widget.podcast.episodes?.first.title ?? '',
+              artist: widget.podcast.episodes?.first.author,
+              duration: Duration(
+                seconds: widget.podcast.episodes?.first.duration ?? 0,
+              ),
+              displayDescription: widget.podcast.episodes?.first.description,
+              artUri: widget.podcast.episodes?.first.image != null
+                  ? Uri.parse(widget.podcast.episodes!.first.image!)
+                  : null,
+              extras: {
+                'audio': widget.podcast.episodes?.first.audio,
+                'downloadPath': widget.podcast.episodes?.first.downloadPath,
+                'pubDate': widget.podcast.episodes?.first.pubDate,
+                'pageLink': widget.podcast.episodes?.first.pageLink
+              },
+            ),
+          );
+        }
+      },
       backgroundColor: Colors.white,
       height: 42,
       width: null,
@@ -202,13 +248,13 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            icon,
+          const Icon(
+            BootstrapIcons.play,
             color: kBlack,
           ),
           const SizedBox(width: kContentSpacing8),
           Text(
-            label,
+            'Play',
             style: Theme.of(context).textTheme.bodyText2?.copyWith(
                   color: kBlack,
                 ),

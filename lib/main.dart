@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_podcast_player/models/episode_model.dart';
+import 'package:flutter_podcast_player/models/podcast_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/screens/bottom_nav.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 late AudioProvider _audioProvider;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+
+  Hive.registerAdapter(PodcastModelAdapter());
+  Hive.registerAdapter(EpisodeModelAdapter());
+
+  await Hive.openBox<PodcastModel>('podcasts');
+  await Hive.openBox<PodcastModel>('subscriptions');
+  await Hive.openBox<EpisodeModel>('downloads');
+
   _audioProvider = await initAudioSerivce();
   await dotenv.load(fileName: ".env");
-
   runApp(const MyApp());
 }
 
@@ -43,6 +54,14 @@ class MyApp extends StatelessWidget {
           thumbColor: Colors.white,
           inactiveTrackColor: kGrey,
           overlayShape: SliderComponentShape.noOverlay,
+        ),
+        listTileTheme: const ListTileThemeData(
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(kRadius),
+            ),
+          ),
         ),
       ),
       home: MultiProvider(

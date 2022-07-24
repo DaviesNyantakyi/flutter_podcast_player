@@ -1,8 +1,8 @@
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_podcast_player/screens/collection_screen/collection_screen.dart';
+import 'package:flutter_podcast_player/screens/explore_screen/explore_screen.dart';
 import 'package:flutter_podcast_player/screens/home_screen/home_screen.dart';
-import 'package:flutter_podcast_player/screens/search_screen/explore_screen.dart';
+import 'package:flutter_podcast_player/screens/library_screen/library_screen.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 
 class BottomNav extends StatefulWidget {
@@ -18,7 +18,7 @@ class _BottomNavState extends State<BottomNav> {
   List<Widget> screens = const [
     HomeScreen(),
     ExploreScreen(),
-    CollectionScreen(),
+    LibraryScreen(),
   ];
 
   final List<BottomNavigationBarItem> bottomNavItems = [
