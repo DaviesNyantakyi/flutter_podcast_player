@@ -51,12 +51,7 @@ class AudioProvider extends BaseAudioHandler with ChangeNotifier {
   Future<void> initPlayer({required MediaItem mediaItem}) async {
     if (mediaItem.extras?['downloadPath'] != null) {
       final file = File(mediaItem.extras?['downloadPath']);
-      _totalDuration = await _justAudio.setAudioSource(
-            MyJABytesSource(
-              file.readAsBytesSync(),
-            ),
-          ) ??
-          Duration.zero;
+      await _justAudio.setAudioSource(AudioSource.uri(file.uri));
     } else {
       if (mediaItem.extras?['audio'] != null) {
         await _justAudio.setUrl(mediaItem.extras!['audio']);

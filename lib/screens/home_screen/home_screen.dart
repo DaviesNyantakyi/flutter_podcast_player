@@ -74,51 +74,56 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPodcasts(BuildContext context) {
-    return ValueListenableBuilder<Box<PodcastModel>?>(
-      valueListenable: Hive.box<PodcastModel>('podcasts').listenable(),
-      builder: (context, podcastBox, _) {
-        final podcasts = podcastBox?.values.toList() ?? [];
-        if (podcasts.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return ScrollConfiguration(
-          behavior: CustomScrollBehavior(),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: kContentSpacing16),
-            child: GridView.builder(
-              shrinkWrap: true,
-              itemCount: podcasts.length,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: kContentSpacing8,
-                mainAxisExtent: 250,
+    return Consumer<AudioProvider>(builder: (context, audioProvider, _) {
+      return ValueListenableBuilder<Box<PodcastModel>?>(
+        valueListenable: Hive.box<PodcastModel>('podcasts').listenable(),
+        builder: (context, podcastBox, _) {
+          final podcasts = podcastBox?.values.toList() ?? [];
+          if (podcasts.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return ScrollConfiguration(
+            behavior: CustomScrollBehavior(),
+            child: SingleChildScrollView(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: kContentSpacing16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                itemCount: podcasts.length,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: kContentSpacing8,
+                  mainAxisExtent: 250,
+                ),
+                itemBuilder: (context, index) {
+                  return PodcastCard(
+                    width: double.infinity,
+                    height: 180,
+                    podcast: podcasts[index],
+                    onTap: () async {
+                      Navigator.push(context, CupertinoPageRoute(
+                        builder: (context) {
+                          return MultiProvider(
+                            providers: [
+                              ChangeNotifierProvider<AudioProvider>.value(
+                                value: audioProvider,
+                              ),
+                            ],
+                            child: PodcastDetailScreen(
+                              podcast: podcasts[index],
+                            ),
+                          );
+                        },
+                      ));
+                    },
+                  );
+                },
               ),
-              itemBuilder: (context, index) {
-                return PodcastCard(
-                  width: double.infinity,
-                  height: 180,
-                  podcast: podcasts[index],
-                  onTap: () async {
-                    final audioProvider =
-                        Provider.of<AudioProvider>(context, listen: false);
-                    Navigator.push(context, CupertinoPageRoute(
-                      builder: (context) {
-                        return ChangeNotifierProvider.value(
-                          value: audioProvider,
-                          child: PodcastDetailScreen(
-                            podcast: podcasts[index],
-                          ),
-                        );
-                      },
-                    ));
-                  },
-                );
-              },
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    });
   }
 }

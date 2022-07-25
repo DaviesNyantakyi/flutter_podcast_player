@@ -4,12 +4,10 @@ import 'package:flutter_podcast_player/models/episode_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 import 'package:flutter_podcast_player/utilities/formal_dates.dart';
+import 'package:flutter_podcast_player/widgets/download_button.dart';
 import 'package:flutter_podcast_player/widgets/podcast_image.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
-
-import '../services/podcast_service.dart';
 
 class EpisodeTile extends StatefulWidget {
   final EpisodeModel episode;
@@ -91,56 +89,5 @@ class _EpisodeTileState extends State<EpisodeTile> {
         ),
       );
     });
-  }
-}
-
-class DownloadButton extends StatefulWidget {
-  final EpisodeModel episode;
-  const DownloadButton({Key? key, required this.episode}) : super(key: key);
-
-  @override
-  State<DownloadButton> createState() => _DownloadButtonState();
-}
-
-class _DownloadButtonState extends State<DownloadButton> {
-  double percentage = 0.0;
-  bool downloading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<EpisodeModel>>(
-      valueListenable: Hive.box<EpisodeModel>('downloads').listenable(),
-      builder: (context, downloadBox, _) {
-        final downloaded = downloadBox.values.contains(widget.episode);
-
-        return IconButton(
-          tooltip: 'Download',
-          icon: downloading
-              ? const CircularProgressIndicator()
-              : Icon(
-                  BootstrapIcons.arrow_down_circle,
-                  color: downloaded ? Colors.green : Colors.white,
-                ),
-          onPressed: () {
-            PodcastService().downloadEpisode(
-              episode: widget.episode,
-              onReceiveProgress: (recieved, total) {
-                percentage = recieved / total;
-
-                if (percentage == 1) {
-                  downloading = false;
-                } else {
-                  downloading = true;
-                }
-
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-            );
-          },
-        );
-      },
-    );
   }
 }

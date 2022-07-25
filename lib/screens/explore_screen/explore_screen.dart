@@ -185,13 +185,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
             final audioProvider =
                 Provider.of<AudioProvider>(context, listen: false);
 
-            // List<EpisodeModel>? episodes = await ListenNotesAPI().fetchEpisodes(
-            //   id: podcasts[index].id,
-            //   rss: podcasts[index].rss,
-            // );
-            // if (episodes != null) {
-            //   podcasts[index].episodes?.addAll(episodes);
-            // }
             Navigator.push(context, CupertinoPageRoute(
               builder: (context) {
                 return ChangeNotifierProvider.value(

@@ -32,43 +32,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        textTheme: const TextTheme(
-          headline6: TextStyle(fontWeight: FontWeight.normal),
-          bodyText1: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
-          bodyText2: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
-        ),
-        brightness: Brightness.dark,
-        bottomSheetTheme: const BottomSheetThemeData(),
-        colorScheme: const ColorScheme.dark().copyWith(
-          primary: kBlue,
-          secondary: kBlue,
-        ),
-        appBarTheme: const AppBarTheme(elevation: 0, color: Colors.transparent),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(kBlue),
-          ),
-        ),
-        sliderTheme: SliderThemeData(
-          thumbColor: Colors.white,
-          inactiveTrackColor: kGrey,
-          overlayShape: SliderComponentShape.noOverlay,
-        ),
-        listTileTheme: const ListTileThemeData(
-          contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(kRadius),
-            ),
-          ),
-        ),
-      ),
+      theme: _theme,
       home: MultiProvider(
         providers: [
-          // ChangeNotifierProvider<PodcastProvider>(
-          //   create: (context) => PodcastProvider(),
-          // ),
           ChangeNotifierProvider<AudioProvider>(
             create: (context) => _audioProvider,
           )
@@ -78,3 +44,36 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+ThemeData _theme = ThemeData(
+  textTheme: const TextTheme(
+    headline6: TextStyle(fontWeight: FontWeight.normal),
+    bodyText1: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
+    bodyText2: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+  ),
+  brightness: Brightness.dark,
+  bottomSheetTheme: const BottomSheetThemeData(),
+  colorScheme: const ColorScheme.dark().copyWith(
+    primary: kBlue,
+    secondary: kBlue,
+  ),
+  appBarTheme: const AppBarTheme(elevation: 0, color: Colors.transparent),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ButtonStyle(
+      backgroundColor: MaterialStateProperty.all<Color>(kBlue),
+    ),
+  ),
+  sliderTheme: SliderThemeData(
+    thumbColor: Colors.white,
+    inactiveTrackColor: kGrey,
+    overlayShape: SliderComponentShape.noOverlay,
+  ),
+  listTileTheme: const ListTileThemeData(
+    contentPadding: EdgeInsets.zero,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(
+        Radius.circular(kRadius),
+      ),
+    ),
+  ),
+);

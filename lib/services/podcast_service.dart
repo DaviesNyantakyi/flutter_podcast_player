@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
@@ -12,9 +11,6 @@ import 'package:flutter_podcast_player/models/podcast_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_podcast_player/utilities/hive_boxes.dart';
 import 'package:flutter_podcast_player/utilities/parse_html.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-
-import '../utilities/custom_path_provider.dart';
 
 class PodcastService {
   final _podIndexApiKey = dotenv.env['PODCASTINDEXAPIKEY'];
@@ -108,7 +104,7 @@ class PodcastService {
         if (feeds != null) {
           final podcasts = feeds.map((feed) async {
             final String id = feed['id'].toString();
-            final episodes = await fetchEpisodes(id: id, rss: feed);
+            final episodes = await fetchEpisodes(id: id, feed: feed);
 
             return PodcastModel(
               id: id,
@@ -119,7 +115,6 @@ class PodcastService {
               pageLink: feed['link'],
               rss: feed['url'],
               episodes: episodes,
-              // randomNumber: Random().nextInt(1000),
             );
           }).toList();
 
@@ -139,7 +134,7 @@ class PodcastService {
 
   Future<List<EpisodeModel>?> fetchEpisodes({
     required String id,
-    required dynamic rss,
+    required dynamic feed,
   }) async {
     try {
       final url =
@@ -158,11 +153,11 @@ class PodcastService {
           final episodes = feedsItems.map((item) {
             return EpisodeModel(
               id: item['id'].toString(),
-              image: item['feedImage'],
+              image: feed['image'],
               title: item['title'],
               description: parseHtml(item: item['description']),
               audio: item['enclosureUrl'],
-              author: rss['author'],
+              author: feed['author'],
               pageLink: item['link'],
               duration: item['duration'],
               pubDate: DateTime.fromMillisecondsSinceEpoch(
@@ -188,82 +183,4 @@ class PodcastService {
       rethrow;
     }
   }
-
-  Future<void> downloadEpisode({
-    required EpisodeModel episode,
-    Function(int, int)? onReceiveProgress,
-  }) async {
-    try {
-      final downloadsDir = await CustomPathProvider().getDownloadsDirectory();
-
-      final downloadBox = HiveBoxes().getDownloads();
-      final file = await CustomPathProvider()
-          .getFile(path: '${downloadsDir.path}/${episode.title}.mp3');
-
-      if (Hive.box<EpisodeModel>('downloads').values.contains(episode)) {
-        await downloadBox.delete(episode.id);
-        await file?.delete();
-        return;
-      }
-
-      if (episode.audio != null) {
-        final Response response = await _dio.get(
-          episode.audio!,
-          options: Options(
-            responseType: ResponseType.bytes,
-          ),
-          onReceiveProgress: onReceiveProgress,
-        );
-
-        if (response.statusCode == 200) {
-          File file = File('${downloadsDir.path}/${episode.title}.mp3');
-          final randFile = file.openSync(mode: FileMode.write);
-
-          randFile.writeFromSync(response.data);
-          randFile.close();
-          episode.downloadPath = file.path;
-          await downloadBox.put(episode.id, episode);
-        }
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  // Future<PodcastModel?> fetchbyFeedURL() async {
-  //   try {
-  //     final url =
-  //         '$_baseURL/api/1.0/podcasts/byfeedurl?url=${Uri.encodeComponent('https://feeds.redcircle.com/ef5caef7-c00e-4dcf-9bac-90b60a2db406')}&pretty';
-
-  //     final header = _initHeader();
-
-  //     final response = await _dio.get(
-  //       url,
-  //       options: Options(headers: header),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.toString());
-  //       Map<String, dynamic> feed = data['feed'];
-
-  //       final id = feed['id'].toString();
-  //       final episodes = await fetchEpisodes(id: id, rss: feed);
-
-  //       return PodcastModel(
-  //         id: id,
-  //         image: feed['image'],
-  //         title: feed['title'],
-  //         description: feed['description'],
-  //         author: feed['author'],
-  //         pageLink: feed['link'],
-  //         rss: feed['url'],
-  //         episodes: episodes,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint(e.toString());
-  //   }
-  //   return null;
-  // }
-
 }

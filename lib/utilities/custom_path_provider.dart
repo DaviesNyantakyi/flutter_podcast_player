@@ -6,9 +6,11 @@ class CustomPathProvider {
   Future<Directory> getDownloadsDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
     Directory newDirectory = Directory('${appDir.path}/downloads');
+
     if (await newDirectory.exists() == false) {
       return newDirectory.create(recursive: true);
     }
+
     return newDirectory;
   }
 

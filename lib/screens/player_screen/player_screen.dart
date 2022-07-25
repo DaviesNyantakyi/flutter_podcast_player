@@ -3,15 +3,14 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_podcast_player/models/episode_model.dart';
 import 'package:flutter_podcast_player/providers/audio_provider.dart';
 import 'package:flutter_podcast_player/utilities/constant.dart';
 import 'package:flutter_podcast_player/utilities/formal_dates.dart';
-import 'package:flutter_podcast_player/widgets/episode_tile.dart';
+import 'package:flutter_podcast_player/widgets/download_button.dart';
 import 'package:flutter_podcast_player/widgets/podcast_image.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
-
-import '../../models/episode_model.dart';
 
 class PlayerScreen extends StatefulWidget {
   final MediaItem mediaItem;
@@ -100,16 +99,40 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // mediaItem: MediaItem(
+            //       id: downloadBox[index].id,
+            //       title: downloadBox[index].title ?? '',
+            //       artist: downloadBox[index].author,
+            //       duration: Duration(
+            //         seconds: downloadBox[index].duration ?? 0,
+            //       ),
+            //       displayDescription: downloadBox[index].description,
+            //       artUri: downloadBox[index].image != null
+            //           ? Uri.parse(downloadBox[index].image!)
+            //           : null,
+            //       extras: {
+            //         'audio': downloadBox[index].audio,
+            //         'downloadPath': downloadBox[index].downloadPath,
+            //         'pubDate': downloadBox[index].pubDate,
+            //         'pageLink': downloadBox[index].pageLink
+            //       },
+            //     ),
             Expanded(
               child: SizedBox(
                 height: 70,
-                child: IconButton(
-                  tooltip: 'Download',
-                  icon: const Icon(
-                    BootstrapIcons.arrow_down_circle,
-                    color: Colors.white,
+                child: DownloadButton(
+                  episode: EpisodeModel(
+                    id: widget.mediaItem.id,
+                    image: widget.mediaItem.artUri.toString(),
+                    title: widget.mediaItem.title,
+                    description: widget.mediaItem.displayDescription,
+                    pageLink: widget.mediaItem.extras?['pageLink'],
+                    audio: widget.mediaItem.extras?['audio'],
+                    author: widget.mediaItem.artist,
+                    duration: widget.mediaItem.duration?.inSeconds,
+                    pubDate: widget.mediaItem.extras?['punDate'],
+                    downloadPath: widget.mediaItem.extras?['downloadPath'],
                   ),
-                  onPressed: () {},
                 ),
               ),
             ),
