@@ -1,6 +1,6 @@
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_podcast_player/providers/donwload_provider.dart';
+import 'package:flutter_podcast_player/utilities/donwloader.dart';
 import 'package:hive_flutter/adapters.dart';
 
 import '../models/episode_model.dart';

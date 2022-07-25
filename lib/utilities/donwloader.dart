@@ -4,8 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/episode_model.dart';
-import '../utilities/custom_path_provider.dart';
-import '../utilities/hive_boxes.dart';
+import 'custom_path_provider.dart';
+import 'hive_boxes.dart';
 
 class Downloader {
   final Dio _dio = Dio();
